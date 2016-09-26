@@ -1,76 +1,83 @@
 package main
 
 import (
-  "bytes"
-  "fmt"
-  "time"
+	"bytes"
+	"flag"
+	"fmt"
+	"os"
+	"time"
 
-  "crypto/sha256"
-  "encoding/binary"
-  "math/big"
+	"crypto/sha256"
+	"math/big"
+
+	"encoding/binary"
+	"encoding/json"
 )
 
 var (
-  BuiltAt string
-  Version = "Unknown"
+	BuiltAt string
+	Version = "Unknown"
+
+	printVersion = flag.Bool("v", false, "Display the version and exit")
 )
 
-type Message struct {
-  Message   string
-  Timestamp int64
-  Nonce     int64
+type HashCash struct {
+	Data      []byte `json:"data"`
+	Timestamp int64  `json:"timestamp"`
+	Nonce     int64  `json:"nonce"`
 }
 
-func (m *Message) ContentHash() []byte {
-  var buf bytes.Buffer
+func (hc *HashCash) Check(zeroes int) bool {
+	digest := sha256.Sum256(hc.ContentHash())
 
-  buf.WriteString(m.Message)
-  binary.Write(&buf, binary.BigEndian, m.Timestamp)
-  binary.Write(&buf, binary.BigEndian, m.Nonce)
+	digestHex := new(big.Int).SetBytes(digest[:])
+	if digestHex.BitLen() == 256-zeroes {
+		return true
+	}
 
-  return buf.Bytes()
+	return false
 }
 
-func (m *Message) FindProof(zeroes int) {
-  // TODO: If Nonce is already set, check to see if it's valid as we may be
-  // able to avoid the work.
-  m.Nonce = 0
+func (hc *HashCash) ContentHash() []byte {
+	var buf bytes.Buffer
 
-  for {
-    digest := sha256.Sum256(m.ContentHash())
-    digestHex := new(big.Int).SetBytes(digest[:])
-    if digestHex.BitLen() == 256-zeroes {
-      return
-    }
+	buf.Write(hc.Data)
+	binary.Write(&buf, binary.BigEndian, hc.Timestamp)
+	binary.Write(&buf, binary.BigEndian, hc.Nonce)
 
-    m.Nonce++
-  }
+	return buf.Bytes()
 }
 
-//func Check(message string, zeroes int, nonce int) bool {
-//  digest := sha256.Sum256([]byte(message + strconv.Itoa(nonce)))
-//  for i := zeroes; i >= 0; i-- {
-//    if digest[i] != 0 {
-//      return false
-//    }
-//  }
-//  return true
-//}
+func (hc *HashCash) FindProof(zeroes int) {
+	if hc.Check(zeroes) {
+		return
+	}
 
-func Verify(msg *Message) int {
-  return 1
+	hc.Nonce = 0
+	hc.Timestamp = time.Now().Unix()
+
+	for {
+		if hc.Check(zeroes) {
+			return
+		}
+
+		hc.Nonce++
+	}
 }
 
 func main() {
-  fmt.Printf("Running version %s built on %s\n", Version, BuiltAt)
-  m := Message{
-    Message:   "testing stuff",
-    Timestamp: time.Now().Unix(),
-    Nonce: 5,
-  }
+	flag.Parse()
 
-  m.FindProof(20)
+	if *printVersion {
+		fmt.Printf("HashCash version %s built on %s\n", Version, BuiltAt)
+		os.Exit(0)
+	}
 
-  fmt.Printf("%x\n", sha256.Sum256(m.ContentHash()))
-  fmt.Printf("%v\n", m.Nonce)
+	hc := HashCash{
+		Data: []byte("Just some test data in the string"),
+	}
+	hc.FindProof(20)
+
+	json, _ := json.Marshal(hc)
+	fmt.Println(string(json))
 }
