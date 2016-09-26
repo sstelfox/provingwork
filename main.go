@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"crypto/rand"
 	"crypto/sha256"
 	"math/big"
 
@@ -22,16 +23,14 @@ var (
 )
 
 type HashCash struct {
-	Data      []byte `json:"data"`
-	Timestamp int64  `json:"timestamp"`
-	Nonce     int64  `json:"nonce"`
+	Data      []byte    `json:"data"`
+	Nonce     int64     `json:"nonce"`
+	Salt      []byte    `json:"salt"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 func (hc *HashCash) Check(zeroes int) bool {
-	digest := sha256.Sum256(hc.ContentHash())
-
-	digestHex := new(big.Int).SetBytes(digest[:])
-	if digestHex.BitLen() == 256-zeroes {
+	if hc.ZeroCount() >= zeroes {
 		return true
 	}
 
@@ -42,7 +41,8 @@ func (hc *HashCash) ContentHash() []byte {
 	var buf bytes.Buffer
 
 	buf.Write(hc.Data)
-	binary.Write(&buf, binary.BigEndian, hc.Timestamp)
+	binary.Write(&buf, binary.BigEndian, hc.Timestamp.Unix())
+	buf.Write(hc.Salt)
 	binary.Write(&buf, binary.BigEndian, hc.Nonce)
 
 	return buf.Bytes()
@@ -54,7 +54,10 @@ func (hc *HashCash) FindProof(zeroes int) {
 	}
 
 	hc.Nonce = 0
-	hc.Timestamp = time.Now().Unix()
+	hc.Timestamp = time.Now()
+
+	hc.Salt = make([]byte, 16)
+	rand.Read(hc.Salt)
 
 	for {
 		if hc.Check(zeroes) {
@@ -63,6 +66,12 @@ func (hc *HashCash) FindProof(zeroes int) {
 
 		hc.Nonce++
 	}
+}
+
+func (hc *HashCash) ZeroCount() int {
+	digest := sha256.Sum256(hc.ContentHash())
+	digestHex := new(big.Int).SetBytes(digest[:])
+	return (256 - digestHex.BitLen())
 }
 
 func main() {
@@ -76,6 +85,7 @@ func main() {
 	hc := HashCash{
 		Data: []byte("Just some test data in the string"),
 	}
+
 	hc.FindProof(20)
 
 	json, _ := json.Marshal(hc)
