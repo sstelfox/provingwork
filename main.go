@@ -1,61 +1,76 @@
 package main
 
 import (
-	"fmt"
+  "bytes"
+  "fmt"
+  "time"
 
-	"crypto/sha256"
-	"math/big"
-	"strconv"
-	"time"
+  "crypto/sha256"
+  "encoding/binary"
+  "math/big"
 )
 
 var (
-	BuiltAt string
-	Version = "Unknown"
+  BuiltAt string
+  Version = "Unknown"
 )
 
 type Message struct {
-	Message   string
-	Timestamp int64
-	Nonce     int
+  Message   string
+  Timestamp int64
+  Nonce     int64
 }
 
-func Prove(msg *Message, zeroes int) {
-	nonce := 0
-	for {
-		nonce++
-		digest := sha256.New()
-		digest.Write([]byte(msg.Message))
-		digest.Write([]byte(strconv.Itoa(int(msg.Timestamp))))
-		digest.Write([]byte(strconv.Itoa(nonce)))
-		digestResult := digest.Sum(nil)
+func (m *Message) ContentHash() []byte {
+  var buf bytes.Buffer
 
-		digestHex := new(big.Int).SetBytes(digestResult)
-		if digestHex.BitLen() == 256-zeroes {
-			msg.Nonce = nonce
-			return
-		}
-	}
+  buf.WriteString(m.Message)
+  binary.Write(&buf, binary.BigEndian, m.Timestamp)
+  binary.Write(&buf, binary.BigEndian, m.Nonce)
+
+  return buf.Bytes()
+}
+
+func (m *Message) FindProof(zeroes int) {
+  // TODO: If Nonce is already set, check to see if it's valid as we may be
+  // able to avoid the work.
+  m.Nonce = 0
+
+  for {
+    digest := sha256.Sum256(m.ContentHash())
+    digestHex := new(big.Int).SetBytes(digest[:])
+    if digestHex.BitLen() == 256-zeroes {
+      return
+    }
+
+    m.Nonce++
+  }
 }
 
 //func Check(message string, zeroes int, nonce int) bool {
-//	digest := sha256.Sum256([]byte(message + strconv.Itoa(nonce)))
-//	for i := zeroes; i >= 0; i-- {
-//		if digest[i] != 0 {
-//			return false
-//		}
-//	}
-//	return true
+//  digest := sha256.Sum256([]byte(message + strconv.Itoa(nonce)))
+//  for i := zeroes; i >= 0; i-- {
+//    if digest[i] != 0 {
+//      return false
+//    }
+//  }
+//  return true
 //}
 
+func Verify(msg *Message) int {
+  return 1
+}
+
 func main() {
-	fmt.Printf("Running version %s built on %s\n", Version, BuiltAt)
-	m := Message{
-		Message:   "testing stuff",
-		Timestamp: time.Now().Unix(),
-	}
+  fmt.Printf("Running version %s built on %s\n", Version, BuiltAt)
+  m := Message{
+    Message:   "testing stuff",
+    Timestamp: time.Now().Unix(),
+    Nonce: 5,
+  }
 
-	Prove(&m, 20)
+  m.FindProof(20)
 
-	fmt.Println("None result:", m.Nonce)
+  fmt.Printf("%x\n", sha256.Sum256(m.ContentHash()))
+  fmt.Printf("%v\n", m.Nonce)
 }
