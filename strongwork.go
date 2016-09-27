@@ -1,4 +1,4 @@
-package strongwork
+package provingwork
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ type StrongWork struct {
 	Data      []byte    `json:"data"`
 	Nonce     int64     `json:"nonce"`
 	Salt      []byte    `json:"salt"`
-	Timestamp time.Time `json:"timestamp"`
+	Timestamp *time.Time `json:"timestamp"`
 }
 
 func (sw *StrongWork) Check(zeroes int) bool {
@@ -31,7 +31,7 @@ func (sw *StrongWork) ContentHash() []byte {
 	buf.Write(sw.Data)
 	buf.Write(sw.Salt)
 
-	binary.Write(&buf, binary.BigEndian, sw.Timestamp.Unix())
+	binary.Write(&buf, binary.BigEndian, &sw.Timestamp.Unix())
 	binary.Write(&buf, binary.BigEndian, sw.Nonce)
 
 	return buf.Bytes()
@@ -43,7 +43,7 @@ func (sw *StrongWork) FindProof(zeroes int) {
 	}
 
 	sw.Nonce = 0
-	sw.Timestamp = time.Now()
+	sw.Timestamp = &time.Now()
 
 	sw.Salt = make([]byte, 16)
 	rand.Read(sw.Salt)
