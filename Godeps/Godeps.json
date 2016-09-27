@@ -1,5 +1,12 @@
 {
-	"ImportPath": "github.com/sstelfox/hashcash",
-	"GoVersion": "go1.5",
-	"Deps": []
+	"ImportPath": "github.com/sstelfox/go-hashcash",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/sstelfox/go-provingwork/strongwork",
+			"Comment": "0.1.5-4-g9064e77",
+			"Rev": "9064e773e05d982af4d8a456ab339fc6906a9857"
+		}
+	]
 }
