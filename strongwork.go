@@ -31,7 +31,10 @@ func (sw *StrongWork) ContentHash() []byte {
 	buf.Write(sw.Data)
 	buf.Write(sw.Salt)
 
-	binary.Write(&buf, binary.BigEndian, &sw.Timestamp.Unix())
+  ts := sw.Timestamp
+	ts2 := ts.Unix()
+
+	binary.Write(&buf, binary.BigEndian, ts2)
 	binary.Write(&buf, binary.BigEndian, sw.Nonce)
 
 	return buf.Bytes()
@@ -43,7 +46,9 @@ func (sw *StrongWork) FindProof(zeroes int) {
 	}
 
 	sw.Nonce = 0
-	sw.Timestamp = &time.Now()
+
+	ts := time.Now()
+	sw.Timestamp = &ts
 
 	sw.Salt = make([]byte, 16)
 	rand.Read(sw.Salt)

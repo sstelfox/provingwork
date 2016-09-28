@@ -1,10 +1,15 @@
-package main
+package provingwork
 
 import (
+  "fmt"
 	"bytes"
-	"fmt"
 	"time"
+
+	"math/big"
+
 	"crypto/rand"
+	"crypto/sha1"
+
 	"encoding/base64"
 	"encoding/binary"
 )
@@ -12,7 +17,6 @@ import (
 var (
 	DefaultBitStrength = 20
 	DefaultSaltSize    = 16
-	DefaultValidityLength time.Duration
 )
 
 // End goal format:
@@ -63,10 +67,28 @@ func NewHashCash(resource []byte, opts ...*HashCashOptions) *HashCash {
 	return &hc
 }
 
+func (hc *HashCash) Check() bool {
+	if (hc.ZeroCount() >= hc.BitStrength) {
+		return true
+	}
+	return false
+}
+
 func (hc *HashCash) CounterBytes() []byte {
 	var buf bytes.Buffer
 	binary.Write(&buf, binary.BigEndian, &hc.Counter)
 	return buf.Bytes()
+}
+
+func (hc *HashCash) FindProof() bool {
+	for {
+		if hc.Check() {
+			return true
+		}
+		hc.Counter++
+	}
+
+	return false
 }
 
 func (hc *HashCash) String() string {
@@ -81,7 +103,8 @@ func (hc *HashCash) String() string {
 	)
 }
 
-func main() {
-	hc := NewHashCash([]byte("testing"))
-	fmt.Printf("%v\n", hc)
+func (hc *HashCash) ZeroCount() int {
+	digest := sha1.Sum([]byte(hc.String()))
+	digestHex := new(big.Int).SetBytes(digest[:])
+	return (160 - digestHex.BitLen())
 }
