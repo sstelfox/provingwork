@@ -12,14 +12,43 @@ import (
 )
 
 type StrongWork struct {
-	Data      []byte    `json:"data"`
-	Nonce     int64     `json:"nonce"`
-	Salt      []byte    `json:"salt"`
-	Timestamp *time.Time `json:"timestamp"`
+	Counter  int64  `json:"counter"`
+	Resource []byte `json:"resource"`
+
+	*WorkOptions
 }
 
-func (sw *StrongWork) Check(zeroes int) bool {
-	if sw.ZeroCount() >= zeroes {
+func NewStrongWork(resource []byte, opts ...*WorkOptions) *StrongWork {
+	sw := StrongWork{
+		Counter: 0,
+		Resource: resource,
+	}
+
+	if (len(opts) != 0) {
+		sw.WorkOptions = opts[0]
+	} else {
+		sw.WorkOptions = &WorkOptions{}
+	}
+
+	if (sw.Timestamp == nil) {
+		t := time.Now()
+		sw.Timestamp = &t
+	}
+
+	if (sw.BitStrength == 0) {
+		sw.BitStrength = DefaultBitStrength
+	}
+
+	if (len(sw.Salt) == 0) {
+		sw.Salt = make([]byte, DefaultSaltSize)
+		rand.Read(sw.Salt)
+	}
+
+	return &sw
+}
+
+func (sw *StrongWork) Check() bool {
+	if (sw.ZeroCount() >= sw.BitStrength) {
 		return true
 	}
 	return false
@@ -28,36 +57,22 @@ func (sw *StrongWork) Check(zeroes int) bool {
 func (sw *StrongWork) ContentHash() []byte {
 	var buf bytes.Buffer
 
-	buf.Write(sw.Data)
+	buf.Write(sw.Resource)
 	buf.Write(sw.Salt)
 
-  ts := sw.Timestamp
-	ts2 := ts.Unix()
-
-	binary.Write(&buf, binary.BigEndian, ts2)
-	binary.Write(&buf, binary.BigEndian, sw.Nonce)
+	ts := sw.Timestamp.Unix()
+	binary.Write(&buf, binary.BigEndian, ts)
+	binary.Write(&buf, binary.BigEndian, sw.Counter)
 
 	return buf.Bytes()
 }
 
-func (sw *StrongWork) FindProof(zeroes int) {
-	if sw.Check(zeroes) {
-		return
-	}
-
-	sw.Nonce = 0
-
-	ts := time.Now()
-	sw.Timestamp = &ts
-
-	sw.Salt = make([]byte, 16)
-	rand.Read(sw.Salt)
-
+func (hc *StrongWork) FindProof() {
 	for {
-		if sw.Check(zeroes) {
+		if hc.Check() {
 			return
 		}
-		sw.Nonce++
+		hc.Counter++
 	}
 }
 

@@ -1,8 +1,8 @@
 package provingwork
 
 import (
-  "fmt"
 	"bytes"
+	"fmt"
 	"time"
 
 	"math/big"
@@ -14,40 +14,27 @@ import (
 	"encoding/binary"
 )
 
-var (
-	DefaultBitStrength = 20
-	DefaultSaltSize    = 16
-)
-
-// End goal format:
+// HashCash format:
 // 1:20:20160927155710:somedatatovalidate::aW5ZdXJQcm90b2NvbHMh:VvJC
 // version, zero bits, date, resource, extension (ignored), rand, counter
 
-type HashCashOptions struct {
-	BitStrength int
-	Extension   []byte
-	Salt        []byte
-	Timestamp   *time.Time
-}
-
 type HashCash struct {
-	Resource []byte
+	Counter  int64  `json:"counter"`
+	Resource []byte `json:"resource"`
 
-	Counter int64
-
-	*HashCashOptions
+	*WorkOptions
 }
 
-func NewHashCash(resource []byte, opts ...*HashCashOptions) *HashCash {
+func NewHashCash(resource []byte, opts ...*WorkOptions) *HashCash {
 	hc := HashCash{
-		Counter: 1,
+		Counter:  0,
 		Resource: resource,
 	}
 
-	if len(opts) != 0 {
-		hc.HashCashOptions = opts[0]
+	if (len(opts) != 0) {
+		hc.WorkOptions = opts[0]
 	} else {
-		hc.HashCashOptions = &HashCashOptions{}
+		hc.WorkOptions = &WorkOptions{}
 	}
 
 	if hc.Timestamp == nil {
@@ -59,7 +46,7 @@ func NewHashCash(resource []byte, opts ...*HashCashOptions) *HashCash {
 		hc.BitStrength = DefaultBitStrength
 	}
 
-	if (len(hc.Salt) == 0) {
+	if len(hc.Salt) == 0 {
 		hc.Salt = make([]byte, DefaultSaltSize)
 		rand.Read(hc.Salt)
 	}
@@ -80,15 +67,13 @@ func (hc *HashCash) CounterBytes() []byte {
 	return buf.Bytes()
 }
 
-func (hc *HashCash) FindProof() bool {
+func (hc *HashCash) FindProof() {
 	for {
 		if hc.Check() {
-			return true
+			return
 		}
 		hc.Counter++
 	}
-
-	return false
 }
 
 func (hc *HashCash) String() string {
@@ -106,5 +91,5 @@ func (hc *HashCash) String() string {
 func (hc *HashCash) ZeroCount() int {
 	digest := sha1.Sum([]byte(hc.String()))
 	digestHex := new(big.Int).SetBytes(digest[:])
-	return (160 - digestHex.BitLen())
+	return ((sha1.Size * 8) - digestHex.BitLen())
 }

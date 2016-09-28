@@ -9,9 +9,9 @@ import (
 
 func main() {
 	hc := provingwork.StrongWork{
-		Data: []byte("Just some test data in the string"),
+		Resource: []byte("Just some test data in the string"),
 	}
-	hc.FindProof(16)
+	hc.FindProof()
 
 	json, _ := json.Marshal(hc)
 	fmt.Println(string(json))
