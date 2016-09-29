@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 
@@ -8,9 +9,10 @@ import (
 )
 
 func main() {
-	hc := provingwork.NewStrongWork([]byte("Just some test data in the string"))
-	hc.FindProof()
+	sw := provingwork.NewStrongWork([]byte("Just some test data in the string"))
+	sw.FindProof()
 
-	json, _ := json.Marshal(hc)
+	json, _ := json.Marshal(sw)
 	fmt.Println(string(json))
+	fmt.Printf("%x\n", sha256.Sum256(sw.ContentHash()))
 }

@@ -15,6 +15,6 @@ func main() {
 	fmt.Printf("%v\n", hc)
 
 	json, _ := json.Marshal(hc)
-	fmt.Printf("%v\n", string(json))
+	fmt.Println(string(json))
 	fmt.Printf("%x\n", sha1.Sum([]byte(hc.String())))
 }
