@@ -20,7 +20,7 @@ import (
 // version, zero bits, date, resource, extension (ignored), rand, counter
 
 type HashCash struct {
-	Counter  int64  `json:"counter"`
+	Counter  int    `json:"counter"`
 	Resource []byte `json:"resource"`
 
 	*WorkOptions
@@ -64,10 +64,7 @@ func (wo HashCash) UnmarshalJSON(data []byte) error {
 }
 
 func NewHashCash(resource []byte, opts ...*WorkOptions) *HashCash {
-	hc := HashCash{
-		Counter:  0,
-		Resource: resource,
-	}
+	hc := HashCash{ Resource: resource }
 
 	if len(opts) != 0 {
 		hc.WorkOptions = opts[0]
@@ -75,19 +72,7 @@ func NewHashCash(resource []byte, opts ...*WorkOptions) *HashCash {
 		hc.WorkOptions = &WorkOptions{}
 	}
 
-	if hc.Timestamp == nil {
-		t := time.Now()
-		hc.Timestamp = &t
-	}
-
-	if hc.BitStrength == 0 {
-		hc.BitStrength = DefaultBitStrength
-	}
-
-	if len(hc.Salt) == 0 {
-		hc.Salt = make([]byte, DefaultSaltSize)
-		rand.Read(hc.Salt)
-	}
+	setDefaultWorkOptions(&hc.WorkOptions)
 
 	return &hc
 }
@@ -105,7 +90,7 @@ func (hc HashCash) CounterBytes() []byte {
 	return buf.Bytes()
 }
 
-func (hc HashCash) FindProof() {
+func (hc *HashCash) FindProof() {
 	for {
 		if hc.Check() {
 			return

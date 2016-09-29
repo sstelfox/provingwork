@@ -9,52 +9,75 @@ import (
 	"math/big"
 
 	"encoding/binary"
+	"encoding/json"
 )
 
 type StrongWork struct {
-	Counter  int64  `json:"counter"`
+	Counter  int    `json:"counter"`
 	Resource []byte `json:"resource"`
 
 	*WorkOptions
 }
 
-func NewStrongWork(resource []byte, opts ...*WorkOptions) *StrongWork {
-	sw := StrongWork{
-		Counter: 0,
-		Resource: resource,
+// An alias type that won't have any of functions (mostly to avoid an infinite
+// loop with the overidden MarshalJSON function)
+type RawStrongWork StrongWork
+
+// This is a special version of the StrongWork that has the types we want to
+// be importing / exporting.
+type StrongWorkExt struct {
+	Timestamp int64 `json:"timestamp"`
+
+	*RawStrongWork
+}
+
+func (wo StrongWork) MarshalJSON() ([]byte, error) {
+	woe := StrongWorkExt{RawStrongWork: (*RawStrongWork)(&wo)}
+
+	if wo.Timestamp != nil {
+		woe.Timestamp = wo.Timestamp.Unix()
 	}
 
-	if (len(opts) != 0) {
+	json, err := json.Marshal(woe)
+	if err != nil {
+		return nil, err
+	}
+
+	return json, nil
+}
+
+func (wo StrongWork) UnmarshalJSON(data []byte) error {
+	woe := StrongWorkExt{RawStrongWork: (*RawStrongWork)(&wo)}
+
+	if err := json.Unmarshal(data, woe); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewStrongWork(resource []byte, opts ...*WorkOptions) *StrongWork {
+	sw := StrongWork{ Resource: resource }
+
+	if len(opts) != 0 {
 		sw.WorkOptions = opts[0]
 	} else {
 		sw.WorkOptions = &WorkOptions{}
 	}
 
-	if (sw.Timestamp == nil) {
-		t := time.Now()
-		sw.Timestamp = &t
-	}
-
-	if (sw.BitStrength == 0) {
-		sw.BitStrength = DefaultBitStrength
-	}
-
-	if (len(sw.Salt) == 0) {
-		sw.Salt = make([]byte, DefaultSaltSize)
-		rand.Read(sw.Salt)
-	}
+	setDefaultWorkOptions(&sw.WorkOptions)
 
 	return &sw
 }
 
-func (sw *StrongWork) Check() bool {
-	if (sw.ZeroCount() >= sw.BitStrength) {
+func (sw StrongWork) Check() bool {
+	if sw.ZeroCount() >= sw.BitStrength {
 		return true
 	}
 	return false
 }
 
-func (sw *StrongWork) ContentHash() []byte {
+func (sw StrongWork) ContentHash() []byte {
 	var buf bytes.Buffer
 
 	buf.Write(sw.Resource)
@@ -62,21 +85,21 @@ func (sw *StrongWork) ContentHash() []byte {
 
 	ts := sw.Timestamp.Unix()
 	binary.Write(&buf, binary.BigEndian, ts)
-	binary.Write(&buf, binary.BigEndian, sw.Counter)
+	binary.Write(&buf, binary.BigEndian, &sw.Counter)
 
 	return buf.Bytes()
 }
 
-func (hc *StrongWork) FindProof() {
+func (sw *StrongWork) FindProof() {
 	for {
-		if hc.Check() {
+		if sw.Check() {
 			return
 		}
-		hc.Counter++
+		sw.Counter++
 	}
 }
 
-func (sw *StrongWork) ZeroCount() int {
+func (sw StrongWork) ZeroCount() int {
 	digest := sha256.Sum256(sw.ContentHash())
 	digestHex := new(big.Int).SetBytes(digest[:])
 	return (256 - digestHex.BitLen())
