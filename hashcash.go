@@ -12,6 +12,7 @@ import (
 
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 )
 
 // HashCash format:
@@ -25,13 +26,50 @@ type HashCash struct {
 	*WorkOptions
 }
 
+// An alias type that won't have any of functions (mostly to avoid an infinite
+// loop with the overidden MarshalJSON function)
+type RawHashCash HashCash
+
+// This is a special version of the HashCash that has the types we want to
+// be importing / exporting.
+type HashCashExt struct {
+	Timestamp int64 `json:"timestamp"`
+
+	*RawHashCash
+}
+
+func (wo HashCash) MarshalJSON() ([]byte, error) {
+	woe := HashCashExt{RawHashCash: (*RawHashCash)(&wo)}
+
+	if wo.Timestamp != nil {
+		woe.Timestamp = wo.Timestamp.Unix()
+	}
+
+	json, err := json.Marshal(woe)
+	if err != nil {
+		return nil, err
+	}
+
+	return json, nil
+}
+
+func (wo HashCash) UnmarshalJSON(data []byte) error {
+	woe := HashCashExt{RawHashCash: (*RawHashCash)(&wo)}
+
+	if err := json.Unmarshal(data, woe); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NewHashCash(resource []byte, opts ...*WorkOptions) *HashCash {
 	hc := HashCash{
 		Counter:  0,
 		Resource: resource,
 	}
 
-	if (len(opts) != 0) {
+	if len(opts) != 0 {
 		hc.WorkOptions = opts[0]
 	} else {
 		hc.WorkOptions = &WorkOptions{}
@@ -55,7 +93,7 @@ func NewHashCash(resource []byte, opts ...*WorkOptions) *HashCash {
 }
 
 func (hc *HashCash) Check() bool {
-	if (hc.ZeroCount() >= hc.BitStrength) {
+	if hc.ZeroCount() >= hc.BitStrength {
 		return true
 	}
 	return false

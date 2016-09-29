@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	DefaultBitStrength = 20
+	DefaultBitStrength = 22
 	DefaultSaltSize    = 16
 )
 
