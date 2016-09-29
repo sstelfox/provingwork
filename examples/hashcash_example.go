@@ -13,10 +13,6 @@ func main() {
 
 	fmt.Printf("%v\n", hc)
 
-	json, err := json.Marshal(hc)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-	} else {
-		fmt.Printf("%v\n", string(json))
-	}
+	json, _ := json.Marshal(hc)
+	fmt.Printf("%v\n", string(json))
 }
