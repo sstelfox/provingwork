@@ -92,20 +92,20 @@ func NewHashCash(resource []byte, opts ...*WorkOptions) *HashCash {
 	return &hc
 }
 
-func (hc *HashCash) Check() bool {
+func (hc HashCash) Check() bool {
 	if hc.ZeroCount() >= hc.BitStrength {
 		return true
 	}
 	return false
 }
 
-func (hc *HashCash) CounterBytes() []byte {
+func (hc HashCash) CounterBytes() []byte {
 	var buf bytes.Buffer
 	binary.Write(&buf, binary.BigEndian, &hc.Counter)
 	return buf.Bytes()
 }
 
-func (hc *HashCash) FindProof() {
+func (hc HashCash) FindProof() {
 	for {
 		if hc.Check() {
 			return
@@ -114,7 +114,7 @@ func (hc *HashCash) FindProof() {
 	}
 }
 
-func (hc *HashCash) String() string {
+func (hc HashCash) String() string {
 	return fmt.Sprintf(
 		"1:%v:%v:%v:%v:%v:%v",
 		hc.BitStrength,
@@ -126,7 +126,7 @@ func (hc *HashCash) String() string {
 	)
 }
 
-func (hc *HashCash) ZeroCount() int {
+func (hc HashCash) ZeroCount() int {
 	digest := sha1.Sum([]byte(hc.String()))
 	digestHex := new(big.Int).SetBytes(digest[:])
 	return ((sha1.Size * 8) - digestHex.BitLen())
