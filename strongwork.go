@@ -2,9 +2,7 @@ package provingwork
 
 import (
 	"bytes"
-	"time"
 
-	"crypto/rand"
 	"crypto/sha256"
 	"math/big"
 
@@ -65,7 +63,7 @@ func NewStrongWork(resource []byte, opts ...*WorkOptions) *StrongWork {
 		sw.WorkOptions = &WorkOptions{}
 	}
 
-	setDefaultWorkOptions(&sw.WorkOptions)
+	setDefaultWorkOptions(sw.WorkOptions)
 
 	return &sw
 }
@@ -85,7 +83,7 @@ func (sw StrongWork) ContentHash() []byte {
 
 	ts := sw.Timestamp.Unix()
 	binary.Write(&buf, binary.BigEndian, ts)
-	binary.Write(&buf, binary.BigEndian, &sw.Counter)
+	binary.Write(&buf, binary.BigEndian, sw.Counter)
 
 	return buf.Bytes()
 }
@@ -102,5 +100,5 @@ func (sw *StrongWork) FindProof() {
 func (sw StrongWork) ZeroCount() int {
 	digest := sha256.Sum256(sw.ContentHash())
 	digestHex := new(big.Int).SetBytes(digest[:])
-	return (256 - digestHex.BitLen())
+	return ((sha256.Size * 8) - digestHex.BitLen())
 }
