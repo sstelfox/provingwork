@@ -11,7 +11,7 @@ import (
 )
 
 type StrongWork struct {
-	Counter  int    `json:"counter"`
+	Counter  int64  `json:"counter"`
 	Resource []byte `json:"resource"`
 
 	*WorkOptions
