@@ -26,7 +26,7 @@ chosen but the order of fields may change.
 You can find examples in the examples/ directory. Both versions are pretty
 straight forward to use. And breaks down to:
 
-```golang
+```go
 package main
 
 import (
@@ -55,11 +55,11 @@ Both mechanisms support additional options and customizations. These are all
 passed as a second argument to the constructor function. The following shows
 how to create the additional options with the default values:
 
-```golang
+```go
 wo := WorkOptions{
 	BitStrength: 22,
 	Extension:   []byte{},
-	Salt:        []byte{}, 		// 16 random bytes
+	Salt:        []byte{},    // 16 random bytes
 	Timestamp:   *time.Time,  // Initializes to time.Now()
 }
 ```
