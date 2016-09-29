@@ -43,12 +43,7 @@ func (wo HashCash) MarshalJSON() ([]byte, error) {
 		woe.Timestamp = wo.Timestamp.Unix()
 	}
 
-	json, err := json.Marshal(woe)
-	if err != nil {
-		return nil, err
-	}
-
-	return json, nil
+	return json.Marshal(woe)
 }
 
 func (wo HashCash) UnmarshalJSON(data []byte) error {
