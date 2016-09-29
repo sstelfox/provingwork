@@ -1,6 +1,7 @@
 package provingwork
 
 import (
+	"crypto/rand"
 	"time"
 )
 
@@ -17,17 +18,17 @@ type WorkOptions struct {
 }
 
 func setDefaultWorkOptions(wo *WorkOptions) {
-	if hc.Timestamp == nil {
+	if wo.Timestamp == nil {
 		t := time.Now()
-		hc.Timestamp = &t
+		wo.Timestamp = &t
 	}
 
-	if hc.BitStrength == 0 {
-		hc.BitStrength = DefaultBitStrength
+	if wo.BitStrength == 0 {
+		wo.BitStrength = DefaultBitStrength
 	}
 
-	if len(hc.Salt) == 0 {
-		hc.Salt = make([]byte, DefaultSaltSize)
-		rand.Read(hc.Salt)
+	if len(wo.Salt) == 0 {
+		wo.Salt = make([]byte, DefaultSaltSize)
+		rand.Read(wo.Salt)
 	}
 }
