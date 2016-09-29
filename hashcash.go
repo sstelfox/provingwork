@@ -3,11 +3,9 @@ package provingwork
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	"math/big"
 
-	"crypto/rand"
 	"crypto/sha1"
 
 	"encoding/base64"
@@ -20,7 +18,7 @@ import (
 // version, zero bits, date, resource, extension (ignored), rand, counter
 
 type HashCash struct {
-	Counter  int    `json:"counter"`
+	Counter  int64  `json:"counter"`
 	Resource []byte `json:"resource"`
 
 	*WorkOptions
@@ -72,7 +70,7 @@ func NewHashCash(resource []byte, opts ...*WorkOptions) *HashCash {
 		hc.WorkOptions = &WorkOptions{}
 	}
 
-	setDefaultWorkOptions(&hc.WorkOptions)
+	setDefaultWorkOptions(hc.WorkOptions)
 
 	return &hc
 }
@@ -86,7 +84,7 @@ func (hc HashCash) Check() bool {
 
 func (hc HashCash) CounterBytes() []byte {
 	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, &hc.Counter)
+	binary.Write(&buf, binary.BigEndian, hc.Counter)
 	return buf.Bytes()
 }
 
