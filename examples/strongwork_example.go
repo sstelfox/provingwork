@@ -9,7 +9,10 @@ import (
 )
 
 func main() {
-	sw := provingwork.NewStrongWork([]byte("Just some test data in the string"))
+	sw := provingwork.NewStrongWork(
+		[]byte("Just some test data in the string"),
+		&provingwork.WorkOptions{ BitStrength: 20 },
+	)
 	sw.FindProof()
 
 	json, _ := json.Marshal(sw)
