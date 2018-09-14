@@ -42,7 +42,7 @@ func main() {
 	hc.FindProof()
 	fmt.Println(hc)
 
-	sw := provingwork.NewStrongCash(dataToVerify)
+	sw := provingwork.NewStrongWork(dataToVerify)
 	sw.FindProof()
 	json, _ := json.Marshal(sw)
 	fmt.Println(string(json))
